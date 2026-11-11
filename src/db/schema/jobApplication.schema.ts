@@ -16,7 +16,7 @@ export const applications = pgTable('applications', {
     jobId: uuid('job_id').references(() => jobs.id, { onDelete: 'cascade'}).notNull(),
     applicationStatus: applicationStatus().notNull().default('pending'),
     createdAt: timestamp('created_at', { mode : 'date'}).notNull().defaultNow(),
-    updtedAt: timestamp('updated_at', { mode : 'date'}).notNull().defaultNow(),
+    updtedAt: timestamp('updated_at', { mode : 'date'}).notNull().defaultNow().$onUpdate(() => new Date()),
 })
 
 
