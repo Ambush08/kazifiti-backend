@@ -1,8 +1,6 @@
 import { pgTable, text, uuid, integer, timestamp, boolean,date } from "drizzle-orm/pg-core";
-import { relations } from "drizzle-orm";
 import { userRole, accountType } from "./enums.js";
-import { jobs } from "./jobs.schema.js";
-import { applications } from "./jobApplication.schema.js";
+
 
 export const users = pgTable('users', {
     id: uuid('id').defaultRandom().primaryKey(),
@@ -21,7 +19,7 @@ export const users = pgTable('users', {
     passwordResetToken: text('password_reset_token'),
     passwordResetExpires: date('password_reset_expires'),
     createdAt: timestamp('created_at', { mode : 'date'}).notNull().defaultNow(), 
-    updatedAt: timestamp('updated_at', { mode : 'date'}).notNull().defaultNow(), 
+    updatedAt: timestamp('updated_at', { mode : 'date'}).notNull().defaultNow().$onUpdate(() => new Date()), 
 });
 
 //User type inference
