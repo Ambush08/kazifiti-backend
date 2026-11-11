@@ -28,7 +28,7 @@ pool.on('connect', () => {
 
 //Listen for db connection errors
 pool.on('error', (err) => {
-    console.log('Misiing DATABASE URL in env variables ')
+    console.log('Misiing DATABASE URL in env variables:', err)
 });
 
 
