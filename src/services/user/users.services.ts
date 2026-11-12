@@ -14,7 +14,7 @@ export const createUserQuery = async (data: NewUser) => {
     firstName: users.firstName,
     lastName: users.lastName,
     role: users.role,
-    profle: users.profile,
+    profile: users.profile,
     accountType: users.accountType,
     emailVerified: users.emailVerified,
     createdAt: users.createdAt,
@@ -43,11 +43,13 @@ export const getUserQuery = async (id: string) => {
 
 //Upsert user
 export const upserUserQuery = async (id: string, data: typeof users.$inferInsert) => {
+
+    const { id: ignoredId, ...userData} = data
   const [user] = await db
     .insert(users)
     .values({
       id,
-      ...data,
+      ...userData,
     })
     .onConflictDoUpdate({
       target: users.id,
@@ -59,7 +61,7 @@ export const upserUserQuery = async (id: string, data: typeof users.$inferInsert
       firstName: users.firstName,
       lastName: users.lastName,
       role: users.role,
-      profle: users.profile,
+      profile: users.profile,
       accountType: users.accountType,
       emailVerified: users.emailVerified,
       createdAt: users.createdAt,
@@ -83,7 +85,7 @@ export const updateUserQuery = async (id: string, data: Partial<User>) => {
       firstName: users.firstName,
       lastName: users.lastName,
       role: users.role,
-      profle: users.profile,
+      profile: users.profile,
       accountType: users.accountType,
       emailVerified: users.emailVerified,
       createdAt: users.createdAt,

@@ -21,8 +21,11 @@ const passwordSchema = z
 
 
 const createUserSchema = z.object({
-    email: z.email().lowercase().trim(),
-    firstName: z.string().lowercase().trim(),
-    lastName: z.string().lowercase().trim(),
+    email: z.email().toLowerCase().trim(),
+    firstName: z.string().toLowerCase().trim(),
+    lastName: z.string().toLowerCase().trim(),
     password: passwordSchema
 });
+
+
+export default createUserSchema;
