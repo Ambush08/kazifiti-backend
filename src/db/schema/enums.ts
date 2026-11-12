@@ -35,5 +35,5 @@ export const workPlace = pgEnum('work_place', [
 
 
 export const applicationStatus = pgEnum('application_status', [
-    'pending', 'reviewed', 'reject', 'selected'
-])
+    'submitted', 'reviewed', 'shortlisted', 'interview', 'rejected', 'Hired'
+]);

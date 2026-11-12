@@ -14,7 +14,7 @@ export const applications = pgTable('applications', {
     coverLetterPublicId: text('cover_letter_puclic_id').notNull(),
     applicantId: uuid('applicant_id').references(() => users.id, { onDelete: 'cascade'}).notNull(),
     jobId: uuid('job_id').references(() => jobs.id, { onDelete: 'cascade'}).notNull(),
-    applicationStatus: applicationStatus().notNull().default('pending'),
+    applicationStatus: applicationStatus().notNull().default('submitted'),
     createdAt: timestamp('created_at', { mode : 'date'}).notNull().defaultNow(),
     updtedAt: timestamp('updated_at', { mode : 'date'}).notNull().defaultNow().$onUpdate(() => new Date()),
 })
