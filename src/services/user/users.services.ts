@@ -1,8 +1,4 @@
-import {
-  users,
-  type NewUser,
-  type User,
-} from "../../db/schema/index.js";
+import { users, type NewUser, type User } from "../../db/schema/index.js";
 import db from "../../db/index.js";
 import { eq } from "drizzle-orm";
 
@@ -24,7 +20,9 @@ export const createUserQuery = async (data: NewUser) => {
   return user;
 };
 
-
+//Find user by email
+export const findUserByEmail = (email: string) =>
+  db.query.users.findFirst({ where: eq(users.email, email) });
 
 //Find user
 export const getUserQuery = async (id: string) => {
@@ -39,12 +37,12 @@ export const getUserQuery = async (id: string) => {
   return user;
 };
 
-
-
 //Upsert user
-export const upserUserQuery = async (id: string, data: typeof users.$inferInsert) => {
-
-    const { id: ignoredId, ...userData} = data
+export const upsertUserQuery = async (
+  id: string,
+  data: typeof users.$inferInsert,
+) => {
+  const { id: ignoredId, ...userData } = data;
   const [user] = await db
     .insert(users)
     .values({
@@ -70,8 +68,6 @@ export const upserUserQuery = async (id: string, data: typeof users.$inferInsert
 
   return user;
 };
-
-
 
 //Update user
 export const updateUserQuery = async (id: string, data: Partial<User>) => {

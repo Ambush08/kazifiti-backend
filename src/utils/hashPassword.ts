@@ -8,3 +8,6 @@ const hashPassword = async (password: string) => {
 
     return passwordHash;
 }
+
+
+export default hashPassword;
