@@ -4,6 +4,7 @@ import { applications } from "./jobApplication.schema.js";
 import { jobs } from "./jobs.schema.js";
 import { categories } from "./categories.schema.js";
 import { SavedJobs } from "./savedJobs.js";
+import { companies } from "./company.schema.js";
 
 
 
@@ -12,12 +13,13 @@ export const userRelations = relations(users, ({many}) => ({
     jobs: many(jobs),
     applications: many(applications),
     savedJobs: many(SavedJobs),
+    company: many(companies)
 }));
 
 
 //Job relations
 export const jobRelations = relations(jobs, ({ one, many}) => ({
-    employer: one(users, { fields: [jobs.employerId], references: [users.id]}),
+    company: one(companies, {fields: [jobs.companyId], references: [companies.id]}),
     applications: many(applications),
     category: one(categories, { fields: [jobs.categoryId], references: [categories.id]}),
     savedJobs: many(SavedJobs),
@@ -34,7 +36,7 @@ export const applicationsRelations = relations(applications, ({one}) => ({
 
 //Categories relations
 export const categoryRelations = relations(categories, ({ many }) => ({
-    jobs: many(jobs)
+    job: many(jobs)
 }));
 
 
@@ -42,4 +44,12 @@ export const categoryRelations = relations(categories, ({ many }) => ({
 export const savedJobsRelations = relations(SavedJobs, ({one})=> ({
     job: one(jobs, { fields: [SavedJobs.jobId], references: [jobs.id]}),
     user: one(users, { fields: [SavedJobs.userId], references: [users.id]})
+}));
+
+
+
+//Companies relations
+export const companiesRelations = relations(companies, ({one, many}) => ({
+    owner: one(users, { fields: [companies.ownerId], references: [users.id]}),
+    job: many(jobs)
 }))
