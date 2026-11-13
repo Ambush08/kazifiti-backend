@@ -1,9 +1,19 @@
 import { Request, Response, NextFunction } from "express";
-import { ZodType } from "zod";
+import { ZodType, ZodError } from "zod";
 
 
 
-export const validate = (schema: ZodType) => (req: Request, res: Response, next: NextFunction) => {
+const formatErrors = (error: ZodError) => {
+  const fields: Record<string, string[]> = {};
+  for (const issue of error.issues) {
+    const key = issue.path.slice(1).join(".") || issue.path[0]?.toString() || "form";
+    (fields[key] ??= []).push(issue.message);
+  }
+  return fields;
+};
+
+
+const validate = (schema: ZodType) => (req: Request, res: Response, next: NextFunction) => {
     const result = schema.safeParse({
         body: req.body,
         params: req.params,
@@ -13,7 +23,7 @@ export const validate = (schema: ZodType) => (req: Request, res: Response, next:
     if(!result.success){
         return res.status(400).json({
             message: 'Invalid data',
-            error: result.error.flatten().fieldErrors
+            error: formatErrors(result.error)
         });
     }
 
@@ -25,3 +35,7 @@ export const validate = (schema: ZodType) => (req: Request, res: Response, next:
 
     next();
 }
+
+
+
+export default validate;
