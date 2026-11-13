@@ -9,17 +9,17 @@ import { companies } from "./company.schema.js";
 
 
 //User Relations
-export const userRelations = relations(users, ({many, one}) => ({
+export const userRelations = relations(users, ({many}) => ({
     jobs: many(jobs),
     applications: many(applications),
     savedJobs: many(SavedJobs),
-    company: one(companies)
+    company: many(companies)
 }));
 
 
 //Job relations
 export const jobRelations = relations(jobs, ({ one, many}) => ({
-    company: one(companies, {fields: [jobs.companyId], references: [companies.ownerId]}),
+    company: one(companies, {fields: [jobs.companyId], references: [companies.id]}),
     applications: many(applications),
     category: one(categories, { fields: [jobs.categoryId], references: [categories.id]}),
     savedJobs: many(SavedJobs),

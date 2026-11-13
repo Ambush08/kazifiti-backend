@@ -4,7 +4,7 @@ import { users } from "./users.schema.js";
 
 
 
-export const companies = pgTable('campanies', {
+export const companies = pgTable('companies', {
     id: uuid('id').defaultRandom().primaryKey(),
     ownerId: uuid('owner_id').notNull().references(() => users.id, { onDelete: 'cascade'}),
     name: text('name').notNull(),
