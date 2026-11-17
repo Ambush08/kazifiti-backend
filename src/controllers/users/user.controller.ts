@@ -1,6 +1,17 @@
 import * as userServices from "../../services/user/users.services.js";
 import { Request, Response } from "express";
 import hashPassword from "../../utils/hashPassword.js";
+import sendEmail from "../../utils/sendEmail.js";
+import { verifyEmailToken } from "../../utils/verifyEmail.js";
+
+
+const getAppUrl = () => {
+  if(!process.env.APP_URI){
+    throw new Error ('Missing APP URI')
+  }
+
+  return process.env.APP_URI as string;
+}
 
 //Register new user
 export const registerUser = async (req: Request, res: Response) => {
@@ -24,6 +35,20 @@ export const registerUser = async (req: Request, res: Response) => {
         lastName,
         passwordHash
     });
+
+
+    const verifyEmailUrl = `${getAppUrl()}/user/auth/verify-email?token=${verifyEmailToken}`;
+    //Verify email url
+    await sendEmail(
+      newUser.email,
+      'Verify email',
+      `<div>
+        <p>Click the link below to verivy your email</p>
+        <p>
+          <a href='${verifyEmailUrl}'>${verifyEmailUrl}</a>
+        </p>
+      </div>`
+    );
 
     return res.status(201).json({
       message: "User created successfully",
