@@ -1,6 +1,6 @@
 import { Router } from "express";
 import validate from "../middlewares/validate.js";
-import { registerUser } from "../controllers/users/user.controller.js";
+import { registerUser, verifyEmailHandler } from "../controllers/users/user.controller.js";
 import registerSchema from "../validators/users/createUser.schema.js";
 
 const router = Router();
@@ -10,6 +10,7 @@ const router = Router();
 router.post('/register', validate(registerSchema), registerUser);
 
 
-
+//Verify email route
+router.get('/verify-email', verifyEmailHandler);
 
 export default router;

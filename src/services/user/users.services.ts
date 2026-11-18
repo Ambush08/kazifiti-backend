@@ -2,6 +2,14 @@ import { users, type NewUser, type User } from "../../db/schema/index.js";
 import db from "../../db/index.js";
 import { eq } from "drizzle-orm";
 
+
+export class NotFoundError extends Error {
+  constructor(message = "Not found") {
+    super(message);
+    this.name = "NotFoundError";
+  }
+}
+
 //Create user service
 export const createUserQuery = async (data: NewUser) => {
   const [user] = await db.insert(users).values(data).returning({
@@ -28,11 +36,10 @@ export const findUserByEmail = (email: string) =>
 export const getUserQuery = async (id: string) => {
   const user = await db.query.users.findFirst({
     where: eq(users.id, id),
+    columns: { passwordHash: false },
   });
 
-  if (!user) {
-    throw new Error(`User with id ${id} not found`);
-  }
+  if (!user) throw new NotFoundError("User not found");
 
   return user;
 };
