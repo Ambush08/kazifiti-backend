@@ -32,7 +32,7 @@ export const verifyEmailToken = (userId: string) => {
 export const verifyEmail = (token: string) => {
     const payload = jwt.verify(token, secret) as EmailVerifyPayload;
 
-    if(payload.purpose !== 'email-verification'){
+    if(payload.purpose !== 'email-verification' || typeof payload.userId !== 'string'){
         throw new Error('Invalid token')
     }
     return payload;

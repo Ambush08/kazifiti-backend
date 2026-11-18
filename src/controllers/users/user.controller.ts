@@ -91,7 +91,7 @@ export const verifyEmailHandler = async (req: Request, res: Response) => {
 
     const decoded = verifyEmail(token) as { userId: string };
 
-    const user = userServices.getUserQuery(decoded.userId);
+    const user = await userServices.getUserQuery(decoded.userId);
 
     if (!user) {
       return res.status(404).json({
@@ -99,7 +99,7 @@ export const verifyEmailHandler = async (req: Request, res: Response) => {
       });
     }
 
-    if ((await user).emailVerified) {
+    if (user.emailVerified) {
       return res.status(200).json({
         message: "Email already verified. Proceed to login",
       });
