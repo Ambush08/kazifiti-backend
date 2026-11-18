@@ -1,5 +1,4 @@
-import { email, z } from 'zod';
-
+import { email, z } from "zod";
 
 const passwordSchema = z
   .string()
@@ -19,17 +18,25 @@ const passwordSchema = z
     message: "Password must contain at least one special character",
   });
 
-
 const createUserSchema = z.object({
-    email: z.string().trim().toLowerCase().pipe(z.email()),
-    firstName: z.string().toLowerCase().trim(),
-    lastName: z.string().toLowerCase().trim(),
-    password: passwordSchema
+  email: z.string().trim().toLowerCase().pipe(z.email()),
+  firstName: z.string().toLowerCase().trim(),
+  lastName: z.string().toLowerCase().trim(),
+  password: passwordSchema,
 });
 
 const registerSchema = z.object({
   body: createUserSchema,
 });
 
+const loginUserSchema = z.object({
+  email: z.string().trim().toLowerCase().pipe(z.email()),
+  password: passwordSchema,
+});
 
-export default registerSchema;;
+
+export const loginSchema = z.object({
+  body: loginUserSchema
+});
+
+export default registerSchema;
