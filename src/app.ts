@@ -2,7 +2,8 @@ import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser';
 import cors from 'cors'
 import express from 'express';
-import { clerkMiddleware } from '@clerk/express'
+import { clerkMiddleware } from '@clerk/express';
+import userRouter from './routes/users.routes.js'
 
 dotenv.config({
     //quiet: true
@@ -30,7 +31,11 @@ app.use(cors({
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,
-}))
+}));
+
+
+//User route
+app.use('/user/auth', userRouter)
 
 const port = Number(process.env.PORT);
 
