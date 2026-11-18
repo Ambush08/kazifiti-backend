@@ -4,7 +4,7 @@ import { jobs } from "./jobs.schema.js";
 
 
 
-export const SavedJobs = pgTable('savedJobs', {
+export const savedJobs = pgTable('savedJobs', {
     id: uuid('id').defaultRandom().primaryKey(),
     userId: uuid('user_id').notNull().references(() => users.id, { onDelete : 'cascade'}),
     jobId: uuid('job_id').notNull().references(() => jobs.id, { onDelete : 'cascade'}),
@@ -19,5 +19,5 @@ export const SavedJobs = pgTable('savedJobs', {
 
 
 //Saved jobs type inference 
-export type SavedJob = typeof SavedJobs.$inferSelect;
-export type NewSavedJob = typeof SavedJobs.$inferInsert
+export type SavedJob = typeof savedJobs.$inferSelect;
+export type NewSavedJob = typeof savedJobs.$inferInsert

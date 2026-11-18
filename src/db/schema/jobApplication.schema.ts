@@ -1,26 +1,45 @@
-import { pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import {
+  pgTable,
+  text,
+  timestamp,
+  uuid,
+  unique,
+  index,
+} from "drizzle-orm/pg-core";
 import { users } from "./users.schema.js";
 import { jobs } from "./jobs.schema.js";
 import { applicationStatus } from "./enums.js";
 
+export const applications = pgTable(
+  "applications",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    applicantId: uuid("applicant_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    jobId: uuid("job_id")
+      .notNull()
+      .references(() => jobs.id, { onDelete: "cascade" }),
+    resumeUrl: text("resume_url").notNull(),
+    resumePublicId: text("resume_public_id").notNull(),
+    coverLetterUrl: text("cover_letter_url"),
+    coverLetterPublicId: text("cover_letter_public_id"),
+    status: applicationStatus("status").notNull().default("submitted"),
+    reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [
+    unique("applications_applicant_job_unique").on(table.applicantId, table.jobId),
+    index("applications_job_idx").on(table.jobId),
+  ],
+);
 
-
-
-export const applications = pgTable('applications', {
-    id: uuid('id').defaultRandom().primaryKey(),
-    resumeUrl: text('resume_url').notNull(),
-    resumePublicId: text('resume_public_id').notNull(),
-    coverLetter: text('cover_letter').notNull(),
-    coverLetterPublicId: text('cover_letter_puclic_id').notNull(),
-    applicantId: uuid('applicant_id').references(() => users.id, { onDelete: 'cascade'}).notNull(),
-    jobId: uuid('job_id').references(() => jobs.id, { onDelete: 'cascade'}).notNull(),
-    applicationStatus: applicationStatus().notNull().default('submitted'),
-    createdAt: timestamp('created_at', { mode : 'date'}).notNull().defaultNow(),
-    updtedAt: timestamp('updated_at', { mode : 'date'}).notNull().defaultNow().$onUpdate(() => new Date()),
-})
-
-
-
-//Application type inference 
+//Application type inference
 export type Application = typeof applications.$inferSelect;
 export type NewApplication = typeof applications.$inferInsert;
