@@ -73,3 +73,7 @@ export const registerUser = async (req: Request, res: Response) => {
   }
 };
 
+
+//Verify email handler
+export const verifyEmailHandler = async () => {}
+
