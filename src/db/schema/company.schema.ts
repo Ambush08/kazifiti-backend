@@ -1,5 +1,4 @@
 import { pgTable, text, uuid, timestamp } from "drizzle-orm/pg-core";
-import { id } from "zod/locales";
 import { users } from "./users.schema.js";
 
 

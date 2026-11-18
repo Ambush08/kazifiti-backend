@@ -1,7 +1,6 @@
 import { pgTable, text, uuid, integer, timestamp } from "drizzle-orm/pg-core";
-import { jobType, status, experienceLevel, workPlace } from "./enums.js";
+import { jobType, status, experienceLevel, workPlace, approvalStatus } from "./enums.js";
 import { categories } from "./categories.schema.js";
-import { users } from "./users.schema.js";
 import { companies } from "./company.schema.js";
 
 
@@ -16,6 +15,7 @@ export const jobs = pgTable('jobs', {
     salaryMin: integer('salary_min').notNull(),
     salaryMax: integer('salary_max').notNull(),
     status: status().notNull().default('open'),
+    approvalStatus: approvalStatus().notNull().default('Pending'),
     experienceLevel: experienceLevel().notNull(),
     logo: text('logo').notNull(),
     publicId: text('public_id').notNull(),
