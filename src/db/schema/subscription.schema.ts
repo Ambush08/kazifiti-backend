@@ -1,4 +1,4 @@
-import { uuid, timestamp, pgTable, index, uniqueIndex, check } from "drizzle-orm/pg-core";
+import { uuid, timestamp, pgTable, index, uniqueIndex, check, unique } from "drizzle-orm/pg-core";
 import { subscriptionStatus } from "./enums.js";
 import { users } from "./users.schema.js";
 import { plans } from "./plans.schema.js";
@@ -24,6 +24,7 @@ export const subscriptions = pgTable(
       .$onUpdate(() => new Date()),
   },
   (table) => [
+    unique("subscriptions_id_user_unique").on(table.id, table.userId),
     index("subscriptions_user_idx").on(table.userId),
     index("subscriptions_status_end_idx").on(table.status, table.endDate),
     uniqueIndex("subscriptions_one_active_per_user")

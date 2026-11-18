@@ -1,4 +1,5 @@
-import { pgTable, uuid, timestamp, text, integer, index } from "drizzle-orm/pg-core";
+import { pgTable, uuid, timestamp, text, integer, index, foreignKey, check } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 import { users } from "./users.schema.js";
 import { paymentMethod } from "./enums.js";
 import { paymentStatus } from "./enums.js";
@@ -9,7 +10,7 @@ export const payments = pgTable(
   {
     id: uuid("id").defaultRandom().primaryKey(),
     userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "restrict" }),
-    subscriptionId: uuid("subscription_id").references(() => subscriptions.id, { onDelete: "restrict" }),
+    subscriptionId: uuid("subscription_id"),
     amount: integer("amount").notNull(),
     currency: text("currency").notNull().default("KES"),
     method: paymentMethod("method").notNull(),
@@ -20,6 +21,12 @@ export const payments = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
+    foreignKey({
+      name: "payments_subscription_owner_fk",
+      columns: [table.subscriptionId, table.userId],
+      foreignColumns: [subscriptions.id, subscriptions.userId],
+    }).onDelete("restrict"),
+    check("payments_amount_non_negative", sql`${table.amount} >= 0`),
     index("payments_user_idx").on(table.userId),
     index("payments_subscription_idx").on(table.subscriptionId),
   ],
