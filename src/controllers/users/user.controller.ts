@@ -137,6 +137,7 @@ export const LoginUser = async (req: Request, res: Response) => {
     const user = await userServices.findUserByEmail(email);
 
     if(!user){
+      await bcrypt.compare(password, DUMMY_HASH);
       return res.status(401).json({
         message: 'Invalid email or password'
       });
