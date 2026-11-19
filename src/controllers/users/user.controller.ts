@@ -6,6 +6,13 @@ import { verifyEmail, verifyEmailToken } from "../../utils/verifyEmail.js";
 import db from "../../db/index.js";
 import { users } from "../../db/schema/users.schema.js";
 import { eq } from "drizzle-orm";
+import bcrypt from 'bcrypt'
+import generateRefreshToken from "../../utils/refreshToken.js";
+import generateAccessToken from "../../utils/accessToken.js";
+
+
+
+const DUMMY_HASH = bcrypt.hashSync("dummy-password", 10);
 
 const getAppUrl = () => {
   if (!process.env.APP_URI) {
@@ -121,3 +128,68 @@ export const verifyEmailHandler = async (req: Request, res: Response) => {
     });
   }
 };
+
+
+export const LoginUser = async (req: Request, res: Response) => {
+  try {
+    const { email, password} = req.body;
+
+    const user = await userServices.findUserByEmail(email);
+
+    if(!user){
+      await bcrypt.compare(password, DUMMY_HASH);
+      return res.status(401).json({
+        message: 'Invalid email or password'
+      });
+    }
+
+
+    const isMatch = await bcrypt.compare(password, user.passwordHash?? DUMMY_HASH);
+
+    if(!isMatch){
+      return res.status(401).json({
+        message: 'Invalid email or password'
+      });
+    }
+
+    if(!user.emailVerified){
+      return res.status(401).json({
+        message: 'Verify your email first'
+      });
+    }
+
+    const refreshToken = generateRefreshToken(user.id, user.role, user.tokenVersion);
+
+    const isProd = process.env.NODE_ENV === 'production';
+
+    const accessToken = generateAccessToken(user.id, user.role, user.tokenVersion);
+
+    res.cookie('refreshToken', refreshToken, {
+      httpOnly: true,
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+      secure: isProd,
+      path: "/api/v1/auth/refresh-token",
+      maxAge: 24 * 60 * 60 * 1000
+    });
+
+    return res.status(200).json({
+      message: 'Login successful',
+      user: {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        role: user.role,
+        isEmailVerified: user.emailVerified,
+        accountType: user.accountType,
+        createdAt: user.createdAt
+      },
+      accessToken
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      message: "Internal server error"
+    })
+  }
+}
