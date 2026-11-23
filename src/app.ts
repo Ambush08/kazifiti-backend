@@ -2,10 +2,10 @@ import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser';
 import cors from 'cors'
 import express from 'express';
-import { clerkMiddleware } from '@clerk/express';
-import userRouter from './routes/users.routes.js'
+import apiRouter from './routes/index.js'
 import env from './env.js';
-
+import { Request, Response } from 'express';
+import { errorHandler } from './config/errorHandler.js';
 dotenv.config({
     //quiet: true
 });
@@ -32,12 +32,26 @@ app.use(cors({
     credentials: true,
 }));
 
+//Parsing form data
+app.use(express.urlencoded({ extended: true}));
+
 
 //User route
-app.use('/user/auth', userRouter)
+app.use(apiRouter)
 
 const port = Number(env.port);
 
 app.listen(port, () => {
     console.log(`Server running at http://localhost:${port}`);
+});
+
+
+//Global error handling
+app.use(errorHandler)
+
+//Not found route
+app.use((req: Request, res: Response) => {
+    return res.status(404).json({
+        message: 'Route not found'
+    })
 });

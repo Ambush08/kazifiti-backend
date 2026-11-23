@@ -20,6 +20,7 @@ const schema = z.object({
   BUSINESS_SHORTCODE: z.string().min(1),
   RESEND_API_KEY: z.string().min(1),
   NGROK_AUTHTOKEN: z.string().optional(), // development only
+  LOG_LEVEL: z.string().min(1),
 });
 
 const parsed = schema.safeParse(process.env);
@@ -47,7 +48,8 @@ const env = {
     mpesaPasskey: variable.MPESA_PASSKEY,
     businessShortcode: variable.BUSINESS_SHORTCODE,
     resendApi:variable.RESEND_API_KEY,
-    ngrokAuthToken: variable.NGROK_AUTHTOKEN
+    ngrokAuthToken: variable.NGROK_AUTHTOKEN,
+    logLevel: variable.LOG_LEVEL 
 };
 
 
