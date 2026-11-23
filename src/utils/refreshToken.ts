@@ -1,6 +1,7 @@
 import jwt from "jsonwebtoken";
+import env from "../env.js";
 
-const secret = process.env.JWT_REFRESH_SECRET;
+const secret = env.jwtRefreshSecret;
 
 if(!secret){
     throw new Error('Missing jwt refresh secret in env variable')

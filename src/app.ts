@@ -4,6 +4,7 @@ import cors from 'cors'
 import express from 'express';
 import { clerkMiddleware } from '@clerk/express';
 import userRouter from './routes/users.routes.js'
+import env from './env.js';
 
 dotenv.config({
     //quiet: true
@@ -13,7 +14,7 @@ const app = express();
 const allowedOrigins = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
-    process.env.CLIENT_URL as string
+    env.clientUrl as string
 ]
 
 //Parse json
@@ -22,8 +23,6 @@ app.use(express.json())
 //Parse cookie
 app.use(cookieParser());
 
-//Configure clark middleware
-app.use(clerkMiddleware())
 
 //Configure cors
 app.use(cors({
@@ -37,7 +36,7 @@ app.use(cors({
 //User route
 app.use('/user/auth', userRouter)
 
-const port = Number(process.env.PORT);
+const port = Number(env.port);
 
 app.listen(port, () => {
     console.log(`Server running at http://localhost:${port}`);
