@@ -72,7 +72,7 @@ const SAFE_ID = /^[\w-]{8,64}$/;
 
 export const httpLogger = pinoHttp({
   logger,
-
+  wrapSerializers: false,
   genReqId: (req, res) => {
     const header = req.headers["x-request-id"];
     const incoming = Array.isArray(header) ? header[0] : header;
