@@ -54,7 +54,7 @@ export const registerUser = async (req: Request, res: Response) => {
         });
 
       const token = verifyEmailToken(newUser.id);
-      const verifyEmailUrl = `${getAppUrl()}/user/auth/verify-email?token=${token}`;
+      const verifyEmailUrl = `${getAppUrl()}/api/user/auth/verify-email?token=${token}`;
 
       // Send email to newly created user
       await sendEmail(
