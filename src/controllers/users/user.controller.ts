@@ -6,12 +6,14 @@ import { verifyEmail, verifyEmailToken } from "../../utils/verifyEmail.js";
 import db from "../../db/index.js";
 import { users } from "../../db/schema/users.schema.js";
 import { eq } from "drizzle-orm";
-import bcrypt from 'bcrypt'
+import bcrypt from "bcrypt";
 import generateRefreshToken from "../../utils/refreshToken.js";
 import generateAccessToken from "../../utils/accessToken.js";
 import env from "../../env.js";
-
-
+import jwt from "jsonwebtoken";
+import { email } from "zod";
+import { User } from "@clerk/express";
+import { REFRESH_COOKIE, REFRESH_MAX_AGE, refreshCookieOptions } from "../../utils/cookieOptions.js";
 
 const DUMMY_HASH = bcrypt.hashSync("dummy-password", 10);
 
@@ -79,7 +81,7 @@ export const registerUser = async (req: Request, res: Response) => {
       });
     }
 
-    console.error(error);
+    req.log.error({ err: error }, "User registration failed");
     res.status(500).json({
       message: "Internal server error",
     });
@@ -118,63 +120,68 @@ export const verifyEmailHandler = async (req: Request, res: Response) => {
       .set({ emailVerified: true })
       .where(eq(users.id, decoded.userId));
 
-      return res.status(200).json({
-        message: 'Email verified successfully'
-      });
-      
+    return res.status(200).json({
+      message: "Email verified successfully",
+    });
   } catch (error) {
-    console.error(error);
+    req.log.error({ err: error }, "Email verification failed");
     return res.status(500).json({
       message: "Internal server error",
     });
   }
 };
 
-
 export const LoginUser = async (req: Request, res: Response) => {
   try {
-    const { email, password} = req.body;
+    const { email, password } = req.body;
 
     const user = await userServices.findUserByEmail(email);
 
-    if(!user){
+    if (!user) {
       await bcrypt.compare(password, DUMMY_HASH);
       return res.status(401).json({
-        message: 'Invalid email or password'
+        message: "Invalid email or password",
       });
     }
 
+    const isMatch = await bcrypt.compare(
+      password,
+      user.passwordHash ?? DUMMY_HASH,
+    );
 
-    const isMatch = await bcrypt.compare(password, user.passwordHash?? DUMMY_HASH);
-
-    if(!isMatch){
+    if (!isMatch) {
       return res.status(401).json({
-        message: 'Invalid email or password'
+        message: "Invalid email or password",
       });
     }
 
-    if(!user.emailVerified){
+    if (!user.emailVerified) {
       return res.status(401).json({
-        message: 'Verify your email first'
+        message: "Verify your email first",
       });
     }
 
-    const refreshToken = generateRefreshToken(user.id, user.role, user.tokenVersion);
+    const refreshToken = generateRefreshToken(
+      user.id,
+      user.role,
+      user.tokenVersion,
+    );
 
-    const isProd = env.nodeEnv === 'production';
+    const isProd = env.nodeEnv === "production";
 
-    const accessToken = generateAccessToken(user.id, user.role, user.tokenVersion);
+    const accessToken = generateAccessToken(
+      user.id,
+      user.role,
+      user.tokenVersion,
+    );
 
-    res.cookie('refreshToken', refreshToken, {
-      httpOnly: true,
-      sameSite: env.nodeEnv === "production" ? "none" : "lax",
-      secure: isProd,
-      path: "/api/v1/auth/refresh-token",
-      maxAge: 24 * 60 * 60 * 1000
+    res.cookie(REFRESH_COOKIE, refreshToken, {
+      ...refreshCookieOptions,
+      maxAge: REFRESH_MAX_AGE,
     });
 
     return res.status(200).json({
-      message: 'Login successful',
+      message: "Login successful",
       user: {
         id: user.id,
         email: user.email,
@@ -183,14 +190,92 @@ export const LoginUser = async (req: Request, res: Response) => {
         role: user.role,
         isEmailVerified: user.emailVerified,
         accountType: user.accountType,
-        createdAt: user.createdAt
+        createdAt: user.createdAt,
       },
-      accessToken
+      accessToken,
     });
   } catch (error) {
-    console.error(error);
+    req.log.error({ err: error }, "Login failed");
     return res.status(500).json({
-      message: "Internal server error"
-    })
+      message: "Internal server error",
+    });
   }
-}
+};
+
+//Refresh token handler
+export const refreshTokenHandler = async (req: Request, res: Response) => {
+  try {
+    const token = req.cookies.refreshToken;
+
+    if (!token) {
+      return res.status(400).json({
+        message: "Missing token",
+      });
+    }
+
+    let decoded: {
+      userId: string;
+      role: "user" | "employer" | "admin";
+      tokenVersion: number;
+    };
+
+    try {
+      decoded = jwt.verify(token, env.jwtRefreshSecret, {
+        algorithms: ["HS256"],
+      }) as typeof decoded;
+    } catch {
+      res.clearCookie(REFRESH_COOKIE, refreshCookieOptions);
+
+      return res.status(401).json({ message: "Invalid or expired token" });
+    }
+
+    const user = await userServices.getUserQuery(decoded.userId);
+
+    if (!user || decoded.tokenVersion !== user.tokenVersion) {
+      res.clearCookie(REFRESH_COOKIE, refreshCookieOptions);
+
+      return res.status(401).json({
+        message: "Invalid token",
+      });
+    }
+
+    const newRefreshToken = generateRefreshToken(
+      user.id,
+      user.role,
+      user.tokenVersion,
+    );
+
+    const isProd = env.nodeEnv === "production";
+
+    const newAccessToken = generateAccessToken(
+      user.id,
+      user.role,
+      user.tokenVersion,
+    );
+
+    res.cookie(REFRESH_COOKIE, newRefreshToken, { 
+      ...refreshCookieOptions,
+      maxAge: REFRESH_MAX_AGE
+    });
+
+    return res.status(200).json({
+      user: {
+        id: user.id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        role: user.role,
+        isEmailVerified: user.emailVerified,
+        accountType: user.accountType,
+        createdAt: user.createdAt,
+      },
+      accessToken: newAccessToken,
+    });
+  } catch (error) {
+    req.log.error({ err: error }, "Refresh token failed");
+
+    return res.status(500).json({
+      message: "Internal server error",
+    });
+  }
+};

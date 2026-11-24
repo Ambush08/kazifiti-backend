@@ -1,11 +1,6 @@
 import jwt from "jsonwebtoken";
 import env from "../env.js";
 
-const secret = env.jwtRefreshSecret;
-
-if(!secret){
-    throw new Error('Missing jwt refresh secret in env variable')
-}
 
 const generateRefreshToken = (
   userId: string,
@@ -18,7 +13,7 @@ const generateRefreshToken = (
       role,
       tokenVersIon,
     },
-    secret,
+    env.jwtRefreshSecret,
     {
       expiresIn: "1d", algorithm: "HS256"
     },

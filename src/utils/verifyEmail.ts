@@ -2,13 +2,6 @@ import jwt from "jsonwebtoken";
 import env from "../env.js";
 
 
-const secret = env.jwtEmailVerify as string;
-
-if (!secret) {
-  throw new Error("Missing jwt email verify secret");
-}
-
-
 interface EmailVerifyPayload {
   userId: string;
   purpose: "email-verification";
@@ -28,7 +21,7 @@ export const verifyEmailToken = (userId: string) => {
       userId,
       purpose: "email-verification"
     },
-    secret,
+    env.jwtEmailVerify,
     { expiresIn: "15min" },
   );
 };
@@ -37,7 +30,7 @@ export const verifyEmailToken = (userId: string) => {
 
 
 export const verifyEmail = (token: string) => {
-    const payload = jwt.verify(token, secret) as EmailVerifyPayload;
+    const payload = jwt.verify(token, env.jwtEmailVerify) as EmailVerifyPayload;
 
     if(payload.purpose !== 'email-verification' || typeof payload.userId !== 'string') {
       throw new InvalidToken("Invalid or expired token");
