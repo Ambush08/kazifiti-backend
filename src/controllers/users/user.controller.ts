@@ -11,11 +11,10 @@ import generateRefreshToken from "../../utils/refreshToken.js";
 import generateAccessToken from "../../utils/accessToken.js";
 import env from "../../env.js";
 import jwt from "jsonwebtoken";
-import { email } from "zod";
-import { User } from "@clerk/express";
+import { NotFoundError } from "../../services/user/users.services.js";
 import { REFRESH_COOKIE, REFRESH_MAX_AGE, refreshCookieOptions } from "../../utils/cookieOptions.js";
 
-const DUMMY_HASH = bcrypt.hashSync("dummy-password", 10);
+const DUMMY_HASH = bcrypt.hashSync(crypto.randomUUID(), 10);
 
 const getAppUrl = () => {
   if (!env.appUrl) {
@@ -131,9 +130,15 @@ export const verifyEmailHandler = async (req: Request, res: Response) => {
   }
 };
 
+//Login user
 export const LoginUser = async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
+
+    const reject = (reason: string) => {
+      req.log.warn({ reason }, "Login rejected");
+      return res.status(401).json({ message: "Invalid email or password" });
+    };
 
     const user = await userServices.findUserByEmail(email);
 
@@ -149,6 +154,10 @@ export const LoginUser = async (req: Request, res: Response) => {
       user.passwordHash ?? DUMMY_HASH,
     );
 
+    if (!user) return reject("user_not_found");
+    if (!user.passwordHash) return reject("no_password_set");
+    if (!isMatch) return reject("bad_password");
+
     if (!isMatch) {
       return res.status(401).json({
         message: "Invalid email or password",
@@ -156,6 +165,7 @@ export const LoginUser = async (req: Request, res: Response) => {
     }
 
     if (!user.emailVerified) {
+      req.log.warn({ reason: 'email_unverified'}, 'login rejected');
       return res.status(401).json({
         message: "Verify your email first",
       });
@@ -213,30 +223,39 @@ export const refreshTokenHandler = async (req: Request, res: Response) => {
       });
     }
 
+    const reject = (reason: string) => {
+      req.log.warn({ reason }, "Refresh rejected");
+      res.clearCookie(REFRESH_COOKIE, refreshCookieOptions);
+      return res.status(401).json({ message: "Invalid or expired token" });
+    };
+
     let decoded: {
       userId: string;
       role: "user" | "employer" | "admin";
       tokenVersion: number;
     };
 
+    let user: Awaited<ReturnType<typeof userServices.getUserQuery>>;
+
     try {
       decoded = jwt.verify(token, env.jwtRefreshSecret, {
         algorithms: ["HS256"],
       }) as typeof decoded;
     } catch {
-      res.clearCookie(REFRESH_COOKIE, refreshCookieOptions);
-
-      return res.status(401).json({ message: "Invalid or expired token" });
+      return reject('invalid token')
     }
 
-    const user = await userServices.getUserQuery(decoded.userId);
+    try {
+      user = await userServices.getUserQuery(decoded.userId);
+    } catch (err) {
+       if (err instanceof NotFoundError) return reject("user_not_found");
+      throw err; 
+    }
 
     if (!user || decoded.tokenVersion !== user.tokenVersion) {
       res.clearCookie(REFRESH_COOKIE, refreshCookieOptions);
 
-      return res.status(401).json({
-        message: "Invalid token",
-      });
+      return reject('token revoked')
     }
 
     const newRefreshToken = generateRefreshToken(

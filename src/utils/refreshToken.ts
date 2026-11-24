@@ -5,13 +5,13 @@ import env from "../env.js";
 const generateRefreshToken = (
   userId: string,
   role: "user" | "employer" | "admin",
-  tokenVersIon: number,
+  tokenVersion: number,
 ) => {
   return jwt.sign(
     {
       userId,
       role,
-      tokenVersIon,
+      tokenVersion,
     },
     env.jwtRefreshSecret,
     {
