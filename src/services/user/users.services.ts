@@ -10,6 +10,9 @@ export class NotFoundError extends Error {
   }
 }
 
+
+type UpdatableUserFields = Pick<User, "firstName" | "lastName" | "profile">;
+
 //Create user service
 export const createUserQuery = async (data: NewUser) => {
   const [user] = await db.insert(users).values(data).returning({
@@ -77,7 +80,7 @@ export const upsertUserQuery = async (
 };
 
 //Update user
-export const updateUserQuery = async (id: string, data: Partial<User>) => {
+export const updateUserQuery = async (id: string, data: Partial<UpdatableUserFields>) => {
   const [user] = await db
     .update(users)
     .set(data)
