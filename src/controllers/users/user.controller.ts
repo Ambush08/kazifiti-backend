@@ -342,7 +342,7 @@ export const forgotPassword = async(req: Request, res: Response) => {
       <P>
         <a href='${link}'>Ckick the link to reset your password. ${link}</a>
       </P>
-      <p>This link expires in 30 minutes. If you didn't request it, ignore this email.</p>
+      <p>This link expires in 15 minutes. If you didn't request it, ignore this email.</p>
       `
     ).catch((error) => {
       req.log.error({err: error}, 'Failed to send reset password email')
