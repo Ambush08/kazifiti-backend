@@ -1,35 +1,34 @@
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 import * as schema from './schema/index.js';
-import dotenv from 'dotenv';
+import env from "../env.js";
+import { logger } from "../utils/logger.js";
 
 
 
-dotenv.config();
-
-if(!process.env.DATABASE_URL){
+if(!env.databaseUrl){
     throw new Error('Missing DATABASE_URL in env variables')
 }
 
 
 const pool = new Pool({
-    connectionString: process.env.DATABASE_URL as string,
+    connectionString: env.databaseUrl,
     max: 10,
-    idleTimeoutMillis: 3000,
-    connectionTimeoutMillis: 3000
-});
-
-
-//Listen for db connection
-pool.on('connect', () => {
-    console.log('Database connected successfully')
+    idleTimeoutMillis: 30_000,
+    connectionTimeoutMillis: 10_000
 });
 
 
 //Listen for db connection errors
 pool.on('error', (err) => {
-    console.log('Misiing DATABASE URL in env variables:', err)
+    logger.error({ err }, "Unexpected error on idle database client",)
 });
+
+
+export const verifyDbConnection = async () => {
+  await pool.query("select 1");
+  logger.info("Database connection verified");
+};
 
 
 const db = drizzle({

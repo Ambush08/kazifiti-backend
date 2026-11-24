@@ -1,7 +1,8 @@
 import jwt from "jsonwebtoken";
+import env from "../env.js";
 
 
-const secret = process.env.JWT_ACCESS_SECRET;
+const secret = env.jwtaccessSecret;
 
 if(!secret){
     throw new Error('Missing jwt access secret in env variable')

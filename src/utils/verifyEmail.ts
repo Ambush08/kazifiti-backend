@@ -1,9 +1,8 @@
 import jwt from "jsonwebtoken";
-import dotenv from "dotenv";
+import env from "../env.js";
 
-dotenv.config();
 
-const secret = process.env.JWT_EMAIL_VERIFY_SECRET as string;
+const secret = env.jwtEmailVerify as string;
 
 if (!secret) {
   throw new Error("Missing jwt email verify secret");

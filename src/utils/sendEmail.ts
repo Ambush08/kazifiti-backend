@@ -1,10 +1,8 @@
 import { Resend } from "resend";
-import dotenv from "dotenv";
+import env from "../env.js";
 
-dotenv.config();
-
-const apiKey = process.env.RESEND_API_KEY;
-const from = process.env.FROM;
+const apiKey = env.resendApi;
+const from = env.from;
 
 if (!apiKey || !from) {
   throw new Error("RESEND_API_KEY and FROM must be set");

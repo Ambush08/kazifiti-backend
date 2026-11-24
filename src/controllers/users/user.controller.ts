@@ -9,17 +9,18 @@ import { eq } from "drizzle-orm";
 import bcrypt from 'bcrypt'
 import generateRefreshToken from "../../utils/refreshToken.js";
 import generateAccessToken from "../../utils/accessToken.js";
+import env from "../../env.js";
 
 
 
 const DUMMY_HASH = bcrypt.hashSync("dummy-password", 10);
 
 const getAppUrl = () => {
-  if (!process.env.APP_URI) {
+  if (!env.appUrl) {
     throw new Error("Missing APP URI");
   }
 
-  return process.env.APP_URI as string;
+  return env.appUrl as string;
 };
 
 //Register new user
@@ -53,7 +54,7 @@ export const registerUser = async (req: Request, res: Response) => {
         });
 
       const token = verifyEmailToken(newUser.id);
-      const verifyEmailUrl = `${getAppUrl()}/user/auth/verify-email?token=${token}`;
+      const verifyEmailUrl = `${getAppUrl()}/api/user/auth/verify-email?token=${token}`;
 
       // Send email to newly created user
       await sendEmail(
@@ -160,13 +161,13 @@ export const LoginUser = async (req: Request, res: Response) => {
 
     const refreshToken = generateRefreshToken(user.id, user.role, user.tokenVersion);
 
-    const isProd = process.env.NODE_ENV === 'production';
+    const isProd = env.nodeEnv === 'production';
 
     const accessToken = generateAccessToken(user.id, user.role, user.tokenVersion);
 
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
-      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+      sameSite: env.nodeEnv === "production" ? "none" : "lax",
       secure: isProd,
       path: "/api/v1/auth/refresh-token",
       maxAge: 24 * 60 * 60 * 1000
