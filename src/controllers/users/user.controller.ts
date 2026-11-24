@@ -13,8 +13,12 @@ import env from "../../env.js";
 import jwt from "jsonwebtoken";
 import { NotFoundError } from "../../services/user/users.services.js";
 import { REFRESH_COOKIE, REFRESH_MAX_AGE, refreshCookieOptions } from "../../utils/cookieOptions.js";
+import crypto from 'crypto'
+
 
 const DUMMY_HASH = bcrypt.hashSync(crypto.randomUUID(), 10);
+const RESET_TTL_MS = 15 * 60 * 1000;
+
 
 const getAppUrl = () => {
   if (!env.appUrl) {
@@ -298,3 +302,60 @@ export const refreshTokenHandler = async (req: Request, res: Response) => {
     });
   }
 };
+
+
+//Forgot password
+export const forgotPassword = async(req: Request, res: Response) => {
+  try {
+    const { email } = req.body;
+
+    const respond = (reason: string) => {
+      req.log.warn({reason}, 'Forgot password request');
+      return res.status(200).json({
+        message: 'If an account with the email exists, a password reset link has been sent to your email'
+      });
+    }
+
+    const token = crypto.randomBytes(32).toString('hex');
+
+    const tokenHash = crypto.createHash('SHA256').update(token).digest('hex');
+
+    const link =  `${env.clientUrl}/reset-password?token=${token}`
+
+    const user = await userServices.findUserByEmail(email);
+
+    if(!user) return respond('user_not_found');
+
+    if(!user.passwordHash) return respond('no_password_set');
+
+    await db
+    .update(users)
+    .set({ 
+      passwordResetToken: tokenHash,
+      passwordResetExpires: new Date(Date.now() + RESET_TTL_MS),
+     })
+     .where(eq(users.email, email));
+
+    await sendEmail(user.email,
+      `Reset yor password pasword`,
+      `
+      <P>
+        <a href='${link}'>Ckick the link to reset your password. ${link}</a>
+      </P>
+      <p>This link expires in 30 minutes. If you didn't request it, ignore this email.</p>
+      `
+    ).catch((error) => {
+      req.log.error({err: error}, 'Failed to send reset password email')
+    });
+
+    return res.status(200).json({
+      message: 'If an account with the email exists, a password reset link has been sent to your email'
+    });
+
+  } catch (error) {
+    req.log.error({err: error}, 'Forgot password failed');
+    return res.status(500).json({
+      message: 'Internal server error'
+    })
+  }
+}
