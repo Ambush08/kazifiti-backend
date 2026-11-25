@@ -1,7 +1,7 @@
 import { Router } from "express";
 import validate from "../middlewares/validate.js";
-import { LoginUser, logoutUser, refreshTokenHandler, registerUser, verifyEmailHandler } from "../controllers/users/user.controller.js";
-import registerSchema, { loginSchema } from "../validators/users/createUser.schema.js";
+import { forgotPassword, LoginUser, refreshTokenHandler, registerUser, resetPasswordHandler, verifyEmailHandler } from "../controllers/users/user.controller.js";
+import registerSchema, { forgotPasswordSchema, loginSchema, resetPasswordSchema } from "../validators/users/createUser.schema.js";
 
 const router = Router();
 
@@ -22,7 +22,11 @@ router.post('/login', validate(loginSchema), LoginUser);
 router.post('/refresh-token', refreshTokenHandler);
 
 
-//Logout user route
-router.post('/logout', logoutUser);
+//Forgot passwword
+router.post('/forgot-password', validate(forgotPasswordSchema), forgotPassword);
+
+
+//Passord reset
+router.post('/password-reset', validate(resetPasswordSchema), resetPasswordHandler);
 
 export default router;

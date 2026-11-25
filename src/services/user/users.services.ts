@@ -1,6 +1,8 @@
 import { users, type NewUser, type User } from "../../db/schema/index.js";
 import db from "../../db/index.js";
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, sql, gt } from "drizzle-orm";
+
+
 
 export class NotFoundError extends Error {
   constructor(message = "Not found") {
@@ -102,23 +104,38 @@ export const updateUserQuery = async (
   return user;
 };
 
-//Revoke refresh token
-export const revokeRefreshToken = async (
-  userId: string,
-  tokenVersion: number,
-) => {
-  const [user] = await db
-    .update(users)
-    .set({
-      tokenVersion: sql`${users.tokenVersion} + 1`,
-    })
-    .where(
-      and(
-        eq(users.id, userId), 
-        eq(users.tokenVersion, tokenVersion)
-      )
+//Compare token
+export const findValidToken = async (tokenHash: string) => {
+  const [row ] =await db
+  .select({ id: users.id})
+  .from(users)
+  .where(
+    and(
+      eq(users.passwordResetToken, tokenHash),
+      gt(users.passwordResetExpires, new Date())
     )
-    .returning({ id: users.id});
+  )
+  .limit(1);
 
-    return user;
-};
+  return row;
+}
+
+//Reset user password
+export const resetPasswordwithToken = async (tokenHash: string, passwordHash: string) => {
+  const [user] = await db.update(users).set({
+    passwordHash,
+    passwordResetToken: null,
+    passwordResetExpires: null,
+    tokenVersion: sql `${users.tokenVersion} + 1`,
+    updatedAt: new Date()
+  })
+  .where(
+    and(
+      eq(users.passwordResetToken, tokenHash),
+      gt(users.passwordResetExpires, new Date())
+    ),
+  )
+  .returning({id: users.id});
+
+  return user;
+}
