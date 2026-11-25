@@ -21,6 +21,10 @@ const DUMMY_HASH = bcrypt.hashSync(crypto.randomUUID(), 10);
 const RESET_TTL_MS = 15 * 60 * 1000;
 
 
+const GENERIC_MESSAGE =
+  "If an account with that email exists, a password reset link has been sent.";
+
+
 const getAppUrl = () => {
   if (!env.appUrl) {
     throw new Error("Missing APP URI");
@@ -313,11 +317,14 @@ export const forgotPassword = async(req: Request, res: Response) => {
     const respond = (reason: string) => {
       req.log.warn({reason}, 'Forgot password request');
       return res.status(200).json({
-        message: 'If an account with the email exists, a password reset link has been sent to your email'
+        message: GENERIC_MESSAGE
       });
     }
 
     const user = await userServices.findUserByEmail(email);
+
+    //Send response before generating token and sendin the email
+    res.status(200).json({ message: GENERIC_MESSAGE });
 
     if(!user) return respond('user_not_found');
 
@@ -349,10 +356,6 @@ export const forgotPassword = async(req: Request, res: Response) => {
       req.log.error({err: error}, 'Failed to send reset password email')
     });
 
-    return res.status(200).json({
-      message: 'If an account with the email exists, a password reset link has been sent to your email'
-    });
-
   } catch (error) {
     req.log.error({err: error}, 'Forgot password failed');
     return res.status(500).json({
@@ -369,8 +372,18 @@ export const resetPasswordHandler = async(req: Request, res: Response) => {
 
     const tokenHash = crypto.createHash('SHA256').update(token).digest('hex');
 
+    //Reject early if token is not valid
+    if(!await userServices.findValidToken(tokenHash)){
+      req.log.warn({ reason: 'invalid_or_expired_toke'}, 'Password reset rejected');
+
+      return res.status(400).json({
+        message: 'Invalid or expired token'
+      });
+    }
+
     const passwordHash = await hashPassword(password);
 
+    //Find user and update password, passwordResetToken and token version
     const user = await userServices.resetPasswordwithToken(tokenHash, passwordHash);
 
 

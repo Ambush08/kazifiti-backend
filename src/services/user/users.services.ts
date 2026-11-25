@@ -102,7 +102,23 @@ export const updateUserQuery = async (id: string, data: Partial<UpdatableUserFie
   return user;
 };
 
+//Compare token
+export const findValidToken = async (tokenHash: string) => {
+  const [row ] =await db
+  .select({ id: users.id})
+  .from(users)
+  .where(
+    and(
+      eq(users.passwordResetToken, tokenHash),
+      gt(users.passwordResetExpires, new Date())
+    )
+  )
+  .limit(1);
 
+  return row;
+}
+
+//Reset user password
 export const resetPasswordwithToken = async (tokenHash: string, passwordHash: string) => {
   const [user] = await db.update(users).set({
     passwordHash,
