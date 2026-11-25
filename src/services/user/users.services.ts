@@ -1,7 +1,6 @@
 import { users, type NewUser, type User } from "../../db/schema/index.js";
 import db from "../../db/index.js";
-import { eq } from "drizzle-orm";
-
+import { and, eq, sql } from "drizzle-orm";
 
 export class NotFoundError extends Error {
   constructor(message = "Not found") {
@@ -9,7 +8,6 @@ export class NotFoundError extends Error {
     this.name = "NotFoundError";
   }
 }
-
 
 type UpdatableUserFields = Pick<User, "firstName" | "lastName" | "profile">;
 
@@ -80,7 +78,10 @@ export const upsertUserQuery = async (
 };
 
 //Update user
-export const updateUserQuery = async (id: string, data: Partial<UpdatableUserFields>) => {
+export const updateUserQuery = async (
+  id: string,
+  data: Partial<UpdatableUserFields>,
+) => {
   const [user] = await db
     .update(users)
     .set(data)
@@ -99,4 +100,25 @@ export const updateUserQuery = async (id: string, data: Partial<UpdatableUserFie
     });
 
   return user;
+};
+
+//Revoke refresh token
+export const revokeRefreshToken = async (
+  userId: string,
+  tokenVersion: number,
+) => {
+  const [user] = await db
+    .update(users)
+    .set({
+      tokenVersion: sql`${users.tokenVersion} + 1`,
+    })
+    .where(
+      and(
+        eq(users.id, userId), 
+        eq(users.tokenVersion, tokenVersion)
+      )
+    )
+    .returning({ id: users.id});
+
+    return user;
 };

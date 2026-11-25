@@ -1,6 +1,6 @@
 import { Router } from "express";
 import validate from "../middlewares/validate.js";
-import { LoginUser, refreshTokenHandler, registerUser, verifyEmailHandler } from "../controllers/users/user.controller.js";
+import { LoginUser, logoutUser, refreshTokenHandler, registerUser, verifyEmailHandler } from "../controllers/users/user.controller.js";
 import registerSchema, { loginSchema } from "../validators/users/createUser.schema.js";
 
 const router = Router();
@@ -20,5 +20,9 @@ router.post('/login', validate(loginSchema), LoginUser);
 
 //Refresh token 
 router.post('/refresh-token', refreshTokenHandler);
+
+
+//Logout user route
+router.post('/logout', logoutUser);
 
 export default router;

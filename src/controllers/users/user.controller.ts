@@ -12,13 +12,15 @@ import generateAccessToken from "../../utils/accessToken.js";
 import env from "../../env.js";
 import jwt from "jsonwebtoken";
 import { NotFoundError } from "../../services/user/users.services.js";
-import { REFRESH_COOKIE, REFRESH_MAX_AGE, refreshCookieOptions } from "../../utils/cookieOptions.js";
-import crypto from 'crypto'
-
+import {
+  REFRESH_COOKIE,
+  REFRESH_MAX_AGE,
+  refreshCookieOptions,
+} from "../../utils/cookieOptions.js";
+import crypto from "crypto";
 
 const DUMMY_HASH = bcrypt.hashSync(crypto.randomUUID(), 10);
 const RESET_TTL_MS = 15 * 60 * 1000;
-
 
 const getAppUrl = () => {
   if (!env.appUrl) {
@@ -169,7 +171,7 @@ export const LoginUser = async (req: Request, res: Response) => {
     }
 
     if (!user.emailVerified) {
-      req.log.warn({ reason: 'email_unverified'}, 'login rejected');
+      req.log.warn({ reason: "email_unverified" }, "login rejected");
       return res.status(401).json({
         message: "Verify your email first",
       });
@@ -246,20 +248,20 @@ export const refreshTokenHandler = async (req: Request, res: Response) => {
         algorithms: ["HS256"],
       }) as typeof decoded;
     } catch {
-      return reject('invalid token')
+      return reject("invalid token");
     }
 
     try {
       user = await userServices.getUserQuery(decoded.userId);
     } catch (err) {
-       if (err instanceof NotFoundError) return reject("user_not_found");
-      throw err; 
+      if (err instanceof NotFoundError) return reject("user_not_found");
+      throw err;
     }
 
     if (!user || decoded.tokenVersion !== user.tokenVersion) {
       res.clearCookie(REFRESH_COOKIE, refreshCookieOptions);
 
-      return reject('token revoked')
+      return reject("token revoked");
     }
 
     const newRefreshToken = generateRefreshToken(
@@ -276,9 +278,9 @@ export const refreshTokenHandler = async (req: Request, res: Response) => {
       user.tokenVersion,
     );
 
-    res.cookie(REFRESH_COOKIE, newRefreshToken, { 
+    res.cookie(REFRESH_COOKIE, newRefreshToken, {
       ...refreshCookieOptions,
-      maxAge: REFRESH_MAX_AGE
+      maxAge: REFRESH_MAX_AGE,
     });
 
     return res.status(200).json({
@@ -303,59 +305,99 @@ export const refreshTokenHandler = async (req: Request, res: Response) => {
   }
 };
 
-
 //Forgot password
-export const forgotPassword = async(req: Request, res: Response) => {
+export const forgotPassword = async (req: Request, res: Response) => {
   try {
     const { email } = req.body;
 
     const respond = (reason: string) => {
-      req.log.warn({reason}, 'Forgot password request');
+      req.log.warn({ reason }, "Forgot password request");
       return res.status(200).json({
-        message: 'If an account with the email exists, a password reset link has been sent to your email'
+        message:
+          "If an account with the email exists, a password reset link has been sent to your email",
       });
-    }
+    };
 
-    const token = crypto.randomBytes(32).toString('hex');
+    const token = crypto.randomBytes(32).toString("hex");
 
-    const tokenHash = crypto.createHash('SHA256').update(token).digest('hex');
+    const tokenHash = crypto.createHash("SHA256").update(token).digest("hex");
 
-    const link =  `${env.clientUrl}/reset-password?token=${token}`
+    const link = `${env.clientUrl}/reset-password?token=${token}`;
 
     const user = await userServices.findUserByEmail(email);
 
-    if(!user) return respond('user_not_found');
+    if (!user) return respond("user_not_found");
 
-    if(!user.passwordHash) return respond('no_password_set');
+    if (!user.passwordHash) return respond("no_password_set");
 
     await db
-    .update(users)
-    .set({ 
-      passwordResetToken: tokenHash,
-      passwordResetExpires: new Date(Date.now() + RESET_TTL_MS),
-     })
-     .where(eq(users.email, email));
+      .update(users)
+      .set({
+        passwordResetToken: tokenHash,
+        passwordResetExpires: new Date(Date.now() + RESET_TTL_MS),
+      })
+      .where(eq(users.email, email));
 
-    await sendEmail(user.email,
+    await sendEmail(
+      user.email,
       `Reset yor password pasword`,
       `
       <P>
         <a href='${link}'>Ckick the link to reset your password. ${link}</a>
       </P>
       <p>This link expires in 15 minutes. If you didn't request it, ignore this email.</p>
-      `
+      `,
     ).catch((error) => {
-      req.log.error({err: error}, 'Failed to send reset password email')
+      req.log.error({ err: error }, "Failed to send reset password email");
     });
 
     return res.status(200).json({
-      message: 'If an account with the email exists, a password reset link has been sent to your email'
+      message:
+        "If an account with the email exists, a password reset link has been sent to your email",
     });
-
   } catch (error) {
-    req.log.error({err: error}, 'Forgot password failed');
+    req.log.error({ err: error }, "Forgot password failed");
     return res.status(500).json({
-      message: 'Internal server error'
-    })
+      message: "Internal server error",
+    });
   }
-}
+};
+
+//Logout user
+export const logoutUser = async (req: Request, res: Response) => {
+  try {
+    const token = req.cookies[REFRESH_COOKIE];
+
+    type RefreshPayload = { userId: string; tokenVersion: number };
+
+    let decoded: RefreshPayload| null = null;
+
+    if (token) {
+      try {
+        decoded = jwt.verify(token, env.jwtRefreshSecret, {
+          algorithms: ["HS256"],
+        }) as RefreshPayload;
+      } catch (error) {
+        req.log.info({ reason: 'invalid_refresh_token'}, 'Logout with unverifiable token')
+      }
+
+      if(decoded){
+        await userServices.revokeRefreshToken(decoded.userId, decoded.tokenVersion)
+      }
+    }
+
+    res.clearCookie(REFRESH_COOKIE, refreshCookieOptions);
+
+    return res.status(200).json({
+      message: "Logged out",
+    });
+  } catch (error) {
+    req.log.error({ err: error }, "Logout failed");
+
+    res.clearCookie(REFRESH_COOKIE, refreshCookieOptions);
+
+    return res.status(500).json({
+      message: "Internal server error",
+    });
+  }
+};
