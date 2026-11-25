@@ -423,13 +423,15 @@ export const logoutUser = async (req: Request, res: Response) => {
   try {
     const token = req.cookies[REFRESH_COOKIE];
 
-    type RefreshType = {userId: string, tokenVersion: number}
+    type RefreshPayload = {userId: string, tokenVersion: number}
 
-    let decoded: RefreshType | null = null;
+    let decoded: RefreshPayload | null = null;
 
     if(token){
       try {
-        decoded = jwt.verify(token, env.jwtRefreshSecret) as RefreshType
+        decoded = jwt.verify(token, env.jwtRefreshSecret, {
+          algorithms: ["HS256"]
+        }) as RefreshPayload
       } catch (error) {
         req.log.info({ reason: 'invalid_toke'}, 'Logout with unverified token')
       }
@@ -446,8 +448,6 @@ export const logoutUser = async (req: Request, res: Response) => {
     })
   } catch (error) {
     req.log.error({ err: error}, 'Logout failed');
-
-    res.clearCookie(REFRESH_COOKIE, refreshCookieOptions);
 
     return res.status(500).json({
       message: 'Internal server error'
