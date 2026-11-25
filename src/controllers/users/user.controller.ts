@@ -4,7 +4,7 @@ import hashPassword from "../../utils/hashPassword.js";
 import sendEmail from "../../utils/sendEmail.js";
 import { verifyEmail, verifyEmailToken } from "../../utils/verifyEmail.js";
 import db from "../../db/index.js";
-import { users } from "../../db/schema/users.schema.js";
+import { users, User } from "../../db/schema/users.schema.js";
 import { eq } from "drizzle-orm";
 import bcrypt from "bcrypt";
 import generateRefreshToken from "../../utils/refreshToken.js";
@@ -19,8 +19,14 @@ import {
 } from "../../utils/cookieOptions.js";
 import crypto from "crypto";
 
+
 const DUMMY_HASH = bcrypt.hashSync(crypto.randomUUID(), 10);
 const RESET_TTL_MS = 15 * 60 * 1000;
+
+
+const GENERIC_MESSAGE =
+  "If an account with that email exists, a password reset link has been sent.";
+
 
 const getAppUrl = () => {
   if (!env.appUrl) {
@@ -313,22 +319,24 @@ export const forgotPassword = async (req: Request, res: Response) => {
     const respond = (reason: string) => {
       req.log.warn({ reason }, "Forgot password request");
       return res.status(200).json({
-        message:
-          "If an account with the email exists, a password reset link has been sent to your email",
+        message: GENERIC_MESSAGE
       });
     };
 
-    const token = crypto.randomBytes(32).toString("hex");
-
-    const tokenHash = crypto.createHash("SHA256").update(token).digest("hex");
-
-    const link = `${env.clientUrl}/reset-password?token=${token}`;
-
     const user = await userServices.findUserByEmail(email);
 
-    if (!user) return respond("user_not_found");
+    //Send response before generating token and sending the email
+    res.status(200).json({ message: GENERIC_MESSAGE });
+
+    if(!user) return respond('user_not_found');
 
     if (!user.passwordHash) return respond("no_password_set");
+
+    const token = crypto.randomBytes(32).toString('hex');
+
+    const tokenHash = crypto.createHash('SHA256').update(token).digest('hex');
+
+    const link =  `${env.clientUrl}/reset-password?token=${token}`
 
     await db
       .update(users)
@@ -343,7 +351,7 @@ export const forgotPassword = async (req: Request, res: Response) => {
       `Reset yor password pasword`,
       `
       <P>
-        <a href='${link}'>Ckick the link to reset your password. ${link}</a>
+        <a href='${link}'>Click the link to reset your password. ${link}</a>
       </P>
       <p>This link expires in 15 minutes. If you didn't request it, ignore this email.</p>
       `,
