@@ -12,8 +12,12 @@ import generateAccessToken from "../../utils/accessToken.js";
 import env from "../../env.js";
 import jwt from "jsonwebtoken";
 import { NotFoundError } from "../../services/user/users.services.js";
-import { REFRESH_COOKIE, REFRESH_MAX_AGE, refreshCookieOptions } from "../../utils/cookieOptions.js";
-import crypto from 'crypto'
+import {
+  REFRESH_COOKIE,
+  REFRESH_MAX_AGE,
+  refreshCookieOptions,
+} from "../../utils/cookieOptions.js";
+import crypto from "crypto";
 
 
 
@@ -174,7 +178,7 @@ export const LoginUser = async (req: Request, res: Response) => {
     }
 
     if (!user.emailVerified) {
-      req.log.warn({ reason: 'email_unverified'}, 'login rejected');
+      req.log.warn({ reason: "email_unverified" }, "login rejected");
       return res.status(401).json({
         message: "Verify your email first",
       });
@@ -251,20 +255,20 @@ export const refreshTokenHandler = async (req: Request, res: Response) => {
         algorithms: ["HS256"],
       }) as typeof decoded;
     } catch {
-      return reject('invalid token')
+      return reject("invalid token");
     }
 
     try {
       user = await userServices.getUserQuery(decoded.userId);
     } catch (err) {
-       if (err instanceof NotFoundError) return reject("user_not_found");
-      throw err; 
+      if (err instanceof NotFoundError) return reject("user_not_found");
+      throw err;
     }
 
     if (!user || decoded.tokenVersion !== user.tokenVersion) {
       res.clearCookie(REFRESH_COOKIE, refreshCookieOptions);
 
-      return reject('token revoked')
+      return reject("token revoked");
     }
 
     const newRefreshToken = generateRefreshToken(
@@ -281,9 +285,9 @@ export const refreshTokenHandler = async (req: Request, res: Response) => {
       user.tokenVersion,
     );
 
-    res.cookie(REFRESH_COOKIE, newRefreshToken, { 
+    res.cookie(REFRESH_COOKIE, newRefreshToken, {
       ...refreshCookieOptions,
-      maxAge: REFRESH_MAX_AGE
+      maxAge: REFRESH_MAX_AGE,
     });
 
     return res.status(200).json({
@@ -308,18 +312,17 @@ export const refreshTokenHandler = async (req: Request, res: Response) => {
   }
 };
 
-
 //Forgot password
-export const forgotPassword = async(req: Request, res: Response) => {
+export const forgotPassword = async (req: Request, res: Response) => {
   try {
     const { email } = req.body;
 
     const respond = (reason: string) => {
-      req.log.warn({reason}, 'Forgot password request');
+      req.log.warn({ reason }, "Forgot password request");
       return res.status(200).json({
         message: GENERIC_MESSAGE
       });
-    }
+    };
 
     const user = await userServices.findUserByEmail(email);
 
@@ -328,7 +331,7 @@ export const forgotPassword = async(req: Request, res: Response) => {
 
     if(!user) return respond('user_not_found');
 
-    if(!user.passwordHash) return respond('no_password_set');
+    const link =  `${env.clientUrl}/reset-password?token=${token}`
 
     const token = crypto.randomBytes(32).toString('hex');
 
@@ -337,30 +340,34 @@ export const forgotPassword = async(req: Request, res: Response) => {
     const link =  `${env.clientUrl}/reset-password?token=${token}`
 
     await db
-    .update(users)
-    .set({ 
-      passwordResetToken: tokenHash,
-      passwordResetExpires: new Date(Date.now() + RESET_TTL_MS),
-     })
-     .where(eq(users.email, email));
+      .update(users)
+      .set({
+        passwordResetToken: tokenHash,
+        passwordResetExpires: new Date(Date.now() + RESET_TTL_MS),
+      })
+      .where(eq(users.email, email));
 
-    await sendEmail(user.email,
+    await sendEmail(
+      user.email,
       `Reset yor password pasword`,
       `
       <P>
         <a href='${link}'>Click the link to reset your password. ${link}</a>
       </P>
       <p>This link expires in 15 minutes. If you didn't request it, ignore this email.</p>
-      `
+      `,
     ).catch((error) => {
-      req.log.error({err: error}, 'Failed to send reset password email')
+      req.log.error({ err: error }, "Failed to send reset password email");
     });
 
   } catch (error) {
-    req.log.error({err: error}, 'Forgot password failed');
+    req.log.error({ err: error }, "Logout failed");
+
+    res.clearCookie(REFRESH_COOKIE, refreshCookieOptions);
+
     return res.status(500).json({
-      message: 'Internal server error'
-    })
+      message: "Internal server error",
+    });
   }
 }
 
