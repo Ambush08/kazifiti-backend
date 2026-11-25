@@ -331,8 +331,6 @@ export const forgotPassword = async (req: Request, res: Response) => {
 
     if(!user) return respond('user_not_found');
 
-    const link =  `${env.clientUrl}/reset-password?token=${token}`
-
     const token = crypto.randomBytes(32).toString('hex');
 
     const tokenHash = crypto.createHash('SHA256').update(token).digest('hex');
@@ -416,5 +414,43 @@ export const resetPasswordHandler = async(req: Request, res: Response) => {
     return res.status(500).json({
       message: "Internal server error"
     });
+  }
+}
+
+
+//Logout user
+export const logoutUser = async (req: Request, res: Response) => {
+  try {
+    const token = req.cookies[REFRESH_COOKIE];
+
+    type RefreshPayload = {userId: string, tokenVersion: number}
+
+    let decoded: RefreshPayload | null = null;
+
+    if(token){
+      try {
+        decoded = jwt.verify(token, env.jwtRefreshSecret, {
+          algorithms: ["HS256"]
+        }) as RefreshPayload
+      } catch (error) {
+        req.log.info({ reason: 'invalid_toke'}, 'Logout with unverified token')
+      }
+
+      if(decoded){
+        await userServices.revokeRefreshToken(decoded.userId, decoded.tokenVersion);
+      }
+    }
+
+    res.clearCookie(REFRESH_COOKIE, refreshCookieOptions);
+
+    res.status(200).json({
+      message: 'Logged out'
+    })
+  } catch (error) {
+    req.log.error({ err: error}, 'Logout failed');
+
+    return res.status(500).json({
+      message: 'Internal server error'
+    })
   }
 }

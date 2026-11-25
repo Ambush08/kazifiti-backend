@@ -139,3 +139,22 @@ export const resetPasswordwithToken = async (tokenHash: string, passwordHash: st
 
   return user;
 }
+
+
+//Revoke refresh token
+export const revokeRefreshToken = async (userId: string, tokenVersion: number) => {
+  const [user] = await db
+  .update(users)
+  .set({
+    tokenVersion: sql `${users.tokenVersion} + 1`
+  })
+  .where(
+    and(
+      eq(users.id, userId),
+      eq(users.tokenVersion, tokenVersion)
+    )
+  )
+  .returning({ id: users.id});
+
+  return user;
+}
