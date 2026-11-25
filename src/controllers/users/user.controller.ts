@@ -20,6 +20,7 @@ import {
 import crypto from "crypto";
 
 
+
 const DUMMY_HASH = bcrypt.hashSync(crypto.randomUUID(), 10);
 const RESET_TTL_MS = 15 * 60 * 1000;
 
@@ -325,12 +326,12 @@ export const forgotPassword = async (req: Request, res: Response) => {
 
     const user = await userServices.findUserByEmail(email);
 
-    //Send response before generating token and sending the email
+    //Send response before generating token and sendin the email
     res.status(200).json({ message: GENERIC_MESSAGE });
 
     if(!user) return respond('user_not_found');
 
-    if (!user.passwordHash) return respond("no_password_set");
+    const link =  `${env.clientUrl}/reset-password?token=${token}`
 
     const token = crypto.randomBytes(32).toString('hex');
 
@@ -359,46 +360,6 @@ export const forgotPassword = async (req: Request, res: Response) => {
       req.log.error({ err: error }, "Failed to send reset password email");
     });
 
-    return res.status(200).json({
-      message:
-        "If an account with the email exists, a password reset link has been sent to your email",
-    });
-  } catch (error) {
-    req.log.error({ err: error }, "Forgot password failed");
-    return res.status(500).json({
-      message: "Internal server error",
-    });
-  }
-};
-
-//Logout user
-export const logoutUser = async (req: Request, res: Response) => {
-  try {
-    const token = req.cookies[REFRESH_COOKIE];
-
-    type RefreshPayload = { userId: string; tokenVersion: number };
-
-    let decoded: RefreshPayload| null = null;
-
-    if (token) {
-      try {
-        decoded = jwt.verify(token, env.jwtRefreshSecret, {
-          algorithms: ["HS256"],
-        }) as RefreshPayload;
-      } catch (error) {
-        req.log.info({ reason: 'invalid_refresh_token'}, 'Logout with unverifiable token')
-      }
-
-      if(decoded){
-        await userServices.revokeRefreshToken(decoded.userId, decoded.tokenVersion)
-      }
-    }
-
-    res.clearCookie(REFRESH_COOKIE, refreshCookieOptions);
-
-    return res.status(200).json({
-      message: "Logged out",
-    });
   } catch (error) {
     req.log.error({ err: error }, "Logout failed");
 
@@ -408,4 +369,52 @@ export const logoutUser = async (req: Request, res: Response) => {
       message: "Internal server error",
     });
   }
-};
+}
+
+
+//Reset passord
+export const resetPasswordHandler = async(req: Request, res: Response) => {
+  try {
+    const { password, token} = req.body;
+
+    const tokenHash = crypto.createHash('SHA256').update(token).digest('hex');
+
+    //Reject early if token is not valid
+    if(!await userServices.findValidToken(tokenHash)){
+      req.log.warn({ reason: 'invalid_or_expired_toke'}, 'Password reset rejected');
+
+      return res.status(400).json({
+        message: 'Invalid or expired token'
+      });
+    }
+
+    const passwordHash = await hashPassword(password);
+
+    //Find user and update password, passwordResetToken and token version
+    const user = await userServices.resetPasswordwithToken(tokenHash, passwordHash);
+
+
+    if(!user){
+      req.log.warn({ reason: 'Invalid_or_expired_token'}, 'Password reset rejected');
+
+      return res.status(400).json({
+        message: "Invalid or expired token"
+      });
+    }
+
+    req.log.info({userId: user.id}, 'Reset password');
+
+    //Clear cookies for user to login again
+    res.clearCookie(REFRESH_COOKIE, refreshCookieOptions);
+
+    return res.status(200).json({
+      message: "Password reset successfull. You can now sign in."
+    });
+
+  } catch (error) {
+    req.log.error({ err: error}, 'reset_password_failed');
+    return res.status(500).json({
+      message: "Internal server error"
+    });
+  }
+}

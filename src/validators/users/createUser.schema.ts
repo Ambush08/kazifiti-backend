@@ -18,6 +18,7 @@ const passwordSchema = z
     message: "Password must contain at least one special character",
   });
 
+  //Register schema
 const createUserSchema = z.object({
   email: z.string().trim().toLowerCase().pipe(z.email()),
   firstName: z.string().toLowerCase().trim(),
@@ -29,6 +30,8 @@ const registerSchema = z.object({
   body: createUserSchema,
 });
 
+
+//Login schema
 const loginUserSchema = z.object({
   email: z.string().trim().toLowerCase().pipe(z.email()),
   password: passwordSchema,
@@ -37,6 +40,28 @@ const loginUserSchema = z.object({
 
 export const loginSchema = z.object({
   body: loginUserSchema
+});
+
+
+//Forgot password schema
+const forgotPassword = z.object({
+  email: z.string().trim().toLowerCase().pipe(z.email()),
+});
+
+export const forgotPasswordSchema = z.object({
+  body: forgotPassword
+});
+
+
+//Reset password
+const resetPassword = z.object({
+  password: passwordSchema,
+  token: z.string().regex(/^[0-9a-f]{64}$/),
+});
+
+
+export const resetPasswordSchema = z.object({
+  body: resetPassword
 });
 
 export default registerSchema;
