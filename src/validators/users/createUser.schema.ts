@@ -1,6 +1,6 @@
 import { email, z } from "zod";
 
-const passwordSchema = z
+export const passwordSchema = z
   .string()
   .min(8, {
     message: "Password must be at least 8 characters long",
@@ -19,12 +19,12 @@ const passwordSchema = z
   });
 
   //Register schema
-const createUserSchema = z.object({
+export const createUserSchema = z.object({
   email: z.string().trim().toLowerCase().pipe(z.email()),
-  firstName: z.string().toLowerCase().trim(),
-  lastName: z.string().toLowerCase().trim(),
+  firstName: z.string().trim(),
+  lastName: z.string().trim(),
   password: passwordSchema,
-});
+}).strict();
 
 const registerSchema = z.object({
   body: createUserSchema,
@@ -35,7 +35,7 @@ const registerSchema = z.object({
 const loginUserSchema = z.object({
   email: z.string().trim().toLowerCase().pipe(z.email()),
   password: passwordSchema,
-});
+}).strict();
 
 
 export const loginSchema = z.object({
@@ -57,7 +57,7 @@ export const forgotPasswordSchema = z.object({
 const resetPassword = z.object({
   password: passwordSchema,
   token: z.string().regex(/^[0-9a-f]{64}$/),
-});
+}).strict();
 
 
 export const resetPasswordSchema = z.object({

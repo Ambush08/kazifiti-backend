@@ -1,13 +1,13 @@
 import { users, type NewUser, type User } from "../../db/schema/index.js";
 import db from "../../db/index.js";
 import { and, eq, sql, gt } from "drizzle-orm";
+import { AppError } from "../../errors/AppError.js";
 
 
 
-export class NotFoundError extends Error {
+export class NotFoundError extends AppError {
   constructor(message = "Not found") {
-    super(message);
-    this.name = "NotFoundError";
+    super(404, message);
   }
 }
 

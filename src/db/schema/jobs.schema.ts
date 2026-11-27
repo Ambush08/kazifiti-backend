@@ -1,7 +1,8 @@
-import { pgTable, text, uuid, integer, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, uuid, integer, timestamp, boolean } from "drizzle-orm/pg-core";
 import { jobType, status, experienceLevel, workPlace, approvalStatus } from "./enums.js";
 import { categories } from "./categories.schema.js";
 import { companies } from "./company.schema.js";
+
 
 
 
@@ -23,6 +24,7 @@ export const jobs = pgTable('jobs', {
     skills: text('skills').array().default([]),
     responsibilities: text('responsibilities').array().default([]),
     workplace: workPlace().notNull().default('on-site'),
+    isApproved: boolean('is_approved').default(false),
     createdAt: timestamp('created_at', { mode: 'date'}).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { mode : 'date'}).notNull().defaultNow().$onUpdate(() => new Date()),
 });

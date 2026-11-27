@@ -1,4 +1,5 @@
 import type { NextFunction, Request, Response } from "express";
+import { AppError } from "../errors/AppError.js";
 
 type HttpError = Error & {
   type?: string;
@@ -14,16 +15,18 @@ export const errorHandler = (
 ) => {
   if (res.headersSent) return next(err);
 
-  if (err.type?.startsWith("entity.")) {
-    const status = err.status ?? err.statusCode ?? 400;
+  if(err instanceof AppError){
+    const status =
+      err.statusCode >= 400 && err.statusCode < 600 ? err.statusCode : 500;
 
-    req.log.warn(
-      { errType: err.type, path: req.path },
-      "Rejected request body",
+    req.log[status >= 500 ? "error" : "warn"](
+      { err, status },
+      "Application error",
     );
+
     return res.status(status).json({
       success: false,
-      message: status === 413 ? "Payload too large" : "Invalid request body",
+      message: status >= 500 ? "Internal server error" : err.message,
     });
   }
 
