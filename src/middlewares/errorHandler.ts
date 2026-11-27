@@ -30,6 +30,16 @@ export const errorHandler = (
     });
   }
 
+  if (err.type === "entity.parse.failed" || err.type === "entity.too.large") {
+    const status = err.type === "entity.too.large" ? 413 : 400;
+
+    req.log.warn({ errType: err.type, path: req.path }, "Rejected request body");
+    return res.status(status).json({
+      success: false,
+      message: status === 413 ? "Payload too large" : "Invalid request body",
+    });
+  }
+
   req.log.error({ err }, "Unhandled error");
 
   return res.status(500).json({
