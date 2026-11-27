@@ -21,7 +21,7 @@ import crypto from "crypto";
 
 
 
-const DUMMY_HASH = bcrypt.hashSync(crypto.randomUUID(), 10);
+export const DUMMY_HASH = bcrypt.hashSync(crypto.randomUUID(), 10);
 const RESET_TTL_MS = 15 * 60 * 1000;
 
 
@@ -29,7 +29,7 @@ const GENERIC_MESSAGE =
   "If an account with that email exists, a password reset link has been sent.";
 
 
-const getAppUrl = () => {
+export const getAppUrl = () => {
   if (!env.appUrl) {
     throw new Error("Missing APP URI");
   }
@@ -157,6 +157,7 @@ export const LoginUser = async (req: Request, res: Response) => {
 
     if (!user) {
       await bcrypt.compare(password, DUMMY_HASH);
+      req.log.warn({ reason: "user_not_found" }, "Login rejected");
       return res.status(401).json({
         message: "Invalid email or password",
       });

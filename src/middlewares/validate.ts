@@ -1,41 +1,49 @@
 import { Request, Response, NextFunction } from "express";
-import { ZodType, ZodError } from "zod";
-
-
+import { ZodType, ZodError, file } from "zod";
+import deleteFromLocal from "../utils/deleteFromLocal.js";
 
 const formatErrors = (error: ZodError) => {
   const fields: Record<string, string[]> = {};
   for (const issue of error.issues) {
-    const key = issue.path.slice(1).join(".") || issue.path[0]?.toString() || "form";
+    const path = issue.path[0] === "body" ? issue.path.slice(1) : issue.path;
+    const key = path.join(".") || "form";
     (fields[key] ??= []).push(issue.message);
   }
   return fields;
 };
 
-
-const validate = (schema: ZodType) => (req: Request, res: Response, next: NextFunction) => {
-    const result = schema.safeParse({
+const validate =
+  (schema: ZodType) => async (req: Request, res: Response, next: NextFunction) => {
+    const file = req.file;
+    try {
+      const result = await schema.safeParse({
         body: req.body,
         params: req.params,
-        query: req.query
-    });
+        query: req.query,
+      });
 
-    if(!result.success){
+      if (!result.success) {
+        if(file) await deleteFromLocal(file.path)
         return res.status(400).json({
-            message: 'Invalid data',
-            error: formatErrors(result.error)
+          message: "Invalid data",
+          error: formatErrors(result.error),
         });
+      }
+
+      const data = result.data as {
+        body?: unknown;
+        params?: unknown;
+        query?: unknown;
+      };
+
+      if (data.body) req.body = data.body;
+
+      res.locals.validated = data;
+
+      next();
+    } catch (error) {
+        next(error)
     }
-
-    const data = result.data as { body?: unknown; params?: unknown; query?: unknown };
-
-    if(data.body) req.body = data.body;
-
-    res.locals.validated = data; 
-
-    next();
-}
-
-
+  };
 
 export default validate;

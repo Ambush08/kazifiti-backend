@@ -21,6 +21,8 @@ const schema = z.object({
   RESEND_API_KEY: z.string().min(1),
   NGROK_AUTHTOKEN: z.string().optional(), // development only
   LOG_LEVEL: z.string().min(1),
+  CLOUDINARY_API_KEY: z.string().min(1),
+  CLOUDINARY_API_SECRET: z.string().min(1),
 });
 
 const parsed = schema.safeParse(process.env);
@@ -49,7 +51,9 @@ const env = {
     businessShortcode: variable.BUSINESS_SHORTCODE,
     resendApi:variable.RESEND_API_KEY,
     ngrokAuthToken: variable.NGROK_AUTHTOKEN,
-    logLevel: variable.LOG_LEVEL 
+    logLevel: variable.LOG_LEVEL,
+    cloudinaryApiKey: variable.CLOUDINARY_API_KEY,
+    cloudinaryApiSecret: variable.CLOUDINARY_API_SECRET,
 };
 
 

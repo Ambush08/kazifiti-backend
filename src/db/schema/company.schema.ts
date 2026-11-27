@@ -8,6 +8,8 @@ export const companies = pgTable('companies', {
     ownerId: uuid('owner_id').notNull().references(() => users.id, { onDelete: 'cascade'}),
     name: text('name').notNull(),
     websiteUrl: text('website_url'),
+    location: text('location').notNull(),
+    industry: text('industry').notNull(),
     logo: text('logo'),
     logoId: text('logo_id'),
     createdAt: timestamp('created_at', { mode: 'date'}).notNull().defaultNow(),

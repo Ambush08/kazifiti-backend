@@ -24,7 +24,7 @@ const safeErr = (err: unknown) => {
     errType: e.type,
   };
 
-  // body-parser errors: message and stack can echo the body, so use fixed text
+  
   const isBodyError = "body" in e || e.type?.startsWith("entity.");
   if (isBodyError) {
     return { ...base, message: "Request body could not be parsed" };
@@ -41,9 +41,6 @@ export const logger = pino({
       "req.headers.authorization",
       "req.headers.cookie",
       'res.headers["set-cookie"]',
-      "req.body.password",
-      "req.body.token",
-      "req.body.refreshToken",
       "err.config.headers.Authorization",
       "err.config.headers.authorization",
       "err.config.auth",
