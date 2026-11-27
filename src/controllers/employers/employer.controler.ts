@@ -65,7 +65,7 @@ export const registerEmployer = async (req: Request, res: Response) => {
     const { user } = await employerServices.registerRecruiterService(userData, {
       ...company,
       logo: result?.url,
-      publicId: result?.publicId,
+      logoId: result?.publicId,
     });
 
     //Create email verification token
@@ -95,7 +95,10 @@ export const registerEmployer = async (req: Request, res: Response) => {
   } catch (error: any) {
     //Delete logo from cloudinary
     if (result?.publicId) {
-      await cloudinary.uploader.destroy(result.publicId);
+      await cloudinary.uploader.destroy(result.publicId)
+      .catch((error) => {
+        req.log.error({ err: error }, 'Failed to delete logo from cloudinary')
+      });
     }
 
     if ((error?.code ?? error?.cause?.code) === "23505") {
