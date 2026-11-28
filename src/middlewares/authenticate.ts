@@ -24,8 +24,8 @@ export const authenticate = (
 ) => {
   const header = req.headers.authorization;
 
-  if (!header || !header.startsWith("Baerer ")) {
-    throw new AppError(400, "Missing or inavlid auth token");
+  if (!header || !header.startsWith("Bearer ")) {
+    throw new AppError(401, "Missing or inavlid auth token");
   }
 
   const token = header.split(" ")[1];
@@ -38,11 +38,10 @@ export const authenticate = (
     }) as AccessPayload;
   } catch (error) {
     req.log.error({ err: error }, "Invalid token");
+    throw new AppError(401, "Invalid token");
   }
 
-  if (decoded) {
-    req.user = decoded;
-  }
+  req.user = decoded
 
   next();
 };
