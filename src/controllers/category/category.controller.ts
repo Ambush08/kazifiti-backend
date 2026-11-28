@@ -119,6 +119,8 @@ export const updateCategory = async (req: RequestAuth, res: Response) => {
       category,
     });
   } catch (error: any) {
+    if (error instanceof AppError) throw error;
+    
     if ((error?.code ?? error?.cause?.code) === "23505") {
       throw new AppError(409, "Category already exists");
     }
@@ -150,6 +152,8 @@ export const deleteCategory = async (req: RequestAuth, res: Response) => {
             category
         })
     } catch (error) {
+        if (error instanceof AppError) throw error;
+        
         req.log.error({ err: error}, 'Failed to delete category');
 
         throw new AppError(500, 'Internal server error')
