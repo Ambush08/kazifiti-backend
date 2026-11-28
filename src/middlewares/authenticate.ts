@@ -1,0 +1,47 @@
+import { Request, Response, NextFunction } from "express";
+import { AppError } from "../errors/AppError.js";
+import jwt from "jsonwebtoken";
+import env from "../env.js";
+
+type AccessPayload = {
+  userId: string;
+  role: "user" | "employer" | "admin";
+  tokenVersion: number;
+};
+
+export interface RequestAuth extends Request {
+  user?: {
+    userId: string;
+    role: "user" | "employer" | "admin";
+    tokenVersion: number;
+  };
+}
+
+export const authenticate = (
+  req: RequestAuth,
+  res: Response,
+  next: NextFunction,
+) => {
+  const header = req.headers.authorization;
+
+  if (!header || !header.startsWith("Bearer ")) {
+    throw new AppError(401, "Missing or inavlid auth token");
+  }
+
+  const token = header.split(" ")[1];
+
+  let decoded: AccessPayload | null = null;
+
+  try {
+    decoded = jwt.verify(token, env.jwtaccessSecret, {
+      algorithms: ["HS256"],
+    }) as AccessPayload;
+  } catch (error) {
+    req.log.error({ err: error }, "Invalid token");
+    throw new AppError(401, "Invalid token");
+  }
+
+  req.user = decoded
+
+  next();
+};
