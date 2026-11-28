@@ -2,8 +2,8 @@ import { and, eq, desc } from "drizzle-orm";
 import db from "../../db/index.js";
 import {
   companies,
-  Company,
-  NewCompany,
+  type Company,
+  type NewCompany,
 } from "../../db/schema/company.schema.js";
 import { AppError } from "../../errors/AppError.js";
 import { NewUser, users } from "../../db/schema/users.schema.js";
