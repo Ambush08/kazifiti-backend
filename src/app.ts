@@ -42,7 +42,7 @@ app.use(express.urlencoded({ extended: true}));
 
 
 //Routes
-app.use(apiRouter)
+app.use(apiRouter);
 
 //Not found route
 app.use((req: Request, res: Response) => {

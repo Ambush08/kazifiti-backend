@@ -13,6 +13,8 @@ export const errorHandler = (
   res: Response,
   next: NextFunction,
 ) => {
+  console.error(err instanceof AppError, (err as any).statusCode, err);
+  
   if (res.headersSent) return next(err);
 
   if(err instanceof AppError){

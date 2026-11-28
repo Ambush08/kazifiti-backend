@@ -7,7 +7,10 @@ import { AppError } from "../../errors/AppError.js";
 
 //Create category service
 export const createCategoryService = async (data: NewCategory) => {
-    const [category] = await db.insert(categories).values(data).returning({
+    const [category] = await db
+    .insert(categories)
+    .values(data)
+    .returning({
         id: categories.id,
         name: categories.name,
         slug: categories.slug,
@@ -54,7 +57,7 @@ export const updateCategoryService = async (id: string, data: NewCategory) => {
         updatedAt: categories.updatedAt
     });
 
-
+    if(!category) throw new AppError(404, 'Category not found')
     return category;
 }
 
@@ -66,8 +69,12 @@ export const deleteCategoryService = async (id: string) => {
     .delete(categories)
     .where(eq(categories.id, id))
     .returning({
-        categoryId: categories.id
+        categoryId: categories.id,
+        name: categories.name,
+        slug: categories.slug
     });
+
+    if(!category) throw new AppError(404, 'Category not found');
 
     return category;
 }
