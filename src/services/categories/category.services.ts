@@ -6,7 +6,7 @@ import { AppError } from "../../errors/AppError.js";
 
 
 //Create category service
-export const createCategoryService = async (data: NewCategoryCategory) => {
+export const createCategoryService = async (data: NewCategory) => {
     const [category] = await db.insert(categories).values(data).returning({
         id: categories.id,
         name: categories.name,
